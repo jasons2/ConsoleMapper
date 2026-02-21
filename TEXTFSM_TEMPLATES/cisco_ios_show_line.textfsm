@@ -1,0 +1,21 @@
+Value TTY ([*\w/]+)
+Value LINE (\d+)
+Value TYPE (\w+)
+Value TX_RX (\S+)
+Value MODEM (\S+)
+Value ROTY (\S+)
+Value ACCO (\S+)
+Value ACCI (\S+)
+Value USES (\d+)
+Value NOISE (\d+)
+Value OVERRUNS (\S+)
+Value INT (\S+)
+
+Start
+  ^Tty.* -> Next
+  # Rule 1: Matches lines WITH speed (1/0, 1/1, etc.)
+  ^${TTY}\s+${LINE}\s+${TYPE}\s+${TX_RX}\s+${MODEM}\s+${ROTY}\s+${ACCO}\s+${ACCI}\s+${USES}\s+${NOISE}\s+${OVERRUNS}\s+${INT} -> Record
+  # Rule 2: Matches lines WITHOUT speed (CTY, VTY)
+  ^${TTY}\s+${LINE}\s+${TYPE}\s+${MODEM}\s+${ROTY}\s+${ACCO}\s+${ACCI}\s+${USES}\s+${NOISE}\s+${OVERRUNS}\s+${INT} -> Record
+  # Rule 3: Catch-all for lines with leading asterisks or weird spacing
+  ^\s*${TTY}\s+${LINE}.* -> Record
