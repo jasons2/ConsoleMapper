@@ -53,7 +53,7 @@ optional arguments:
                         Filename for CSV file to be created
 
 Example:
-mapit.py -u 'some_user' -p 'somepass' -l '10.10.10.10' -t '192.168.1.1' -c 'output_file.csv'
+python3 mapit.py -u 'some_user' -p 'somepass' -l '10.10.10.10' -t '192.168.1.1' -c 'output_file.csv'
 </pre>
 
 
