@@ -19,17 +19,17 @@ This tool eliminates the manual guesswork of "which console cable goes where" by
 ## 📋 Requirements
 * **Terminal Server Config:** Lines must be configured with `transport input telnet` (or `all`).
 * **Connectivity:** Network reachability to the Terminal Server's loopback or management IP.
-* **Environment:** Python 3.x with `Netmiko` or `Paramiko` (suggested for CLI interaction).
+* **Environment:** See requirements.txt for Python3 pkgs
 
 ## 📖 Sample Output
 The tool produces a `terminal_server_map.csv` formatted like this:
 
 
-| Terminal Server | Line | Port | Connected Hostname |
+| TTY | Port  | Connected Hostname |
 | :--- | :--- | :--- | :--- |
-| TS-CORE-01 | 1 | 2001 | Edge-Router-A |
-| TS-CORE-01 | 2 | 2002 | Switch-Floor-02 |
-| TS-CORE-01 | 3 | 2003 | Firewall-Primary |
+| 1/1 | 2001 | Edge-Router-A |
+| 1/2 | 2002 | Switch-Floor-02 |
+| 1/3 | 2003 | Firewall-Primary |
 
 ## ⚠️ Known Limitations
 * **Occupied Lines:** If a line is currently in use by another user, the tool will mark the device as `BUSY` or `UNREACHABLE`.
@@ -56,15 +56,6 @@ optional arguments:
 
 Example:
 mapit.py -u 'some_user' -p 'somepass' -l '10.10.10.10' -t '192.168.1.1' -c 'output_file.csv'
-</pre>
-
-
-# Example Output
-<pre>
-TTY,Port,Hostname
-1/0,2066,SomeHostname
-1/1,2067,AnotherHostName
-1/2,2068,AThirdHostName  
 </pre>
 
 
