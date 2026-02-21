@@ -27,7 +27,7 @@ def main():
                                           user_input.password)
 
     # Gather Show Line CLI
-    show_line_output = net_connect.send_command("sh line")
+    show_line_output = net_connect.send_command("show line")
     
     line_details = parseLineDetails(show_line_output)
 

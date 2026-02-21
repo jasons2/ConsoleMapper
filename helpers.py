@@ -52,7 +52,7 @@ def parseLineDetails(show_line_output: str) -> list:
     
 
 def getHostname(network_connection: object, port: int, lookback_ip: str) -> str:
-
+    hostname = ""
     if network_connection.find_prompt():
         print(f"Attempting to connect to {port}")
         redispatch(network_connection, device_type="terminal_server")
