@@ -32,7 +32,9 @@ def main():
     line_details = parseLineDetails(show_line_output)
 
     for line_detail in line_details:
-        if line_detail["TYPE"] not in ["CTY", "VTY"] and line_detail["LINE"] != '1':
+        if line_detail["TYPE"] in ["CTY", "VTY"] or line_detail["TTY"] in ['0', '1', '*']:
+            continue
+        else:
             port = int(line_detail["LINE"]) + 2000
             host_name = getHostname(net_connect, 
                                     port, 

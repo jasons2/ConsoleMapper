@@ -78,7 +78,6 @@ def getHostname(network_connection: object, port: int, lookback_ip: str) -> str:
                 hostname = match.group(1)
             else:
                 print(f"Hostname not found for port {port}")
-                print(channel_output)
                 hostname = f"Hostname Not Found"
         
         # Disconnect from device.
