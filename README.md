@@ -26,7 +26,7 @@ The tool produces a `terminal_server_map.csv` formatted like this:
 
 
 | TTY | Port  | Connected Hostname |
-| :--- | :--- | :--- | :--- |
+| :--- | :--- | :--- |
 | 1/1 | 2001 | Edge-Router-A |
 | 1/2 | 2002 | Switch-Floor-02 |
 | 1/3 | 2003 | Firewall-Primary |
