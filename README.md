@@ -35,8 +35,6 @@ The tool produces a `terminal_server_map.csv` formatted like this:
 * **Occupied Lines:** If a line is currently in use by another user, the tool will mark the device as `BUSY` or `UNREACHABLE`.
 * **Standard Ports:** Uses the default `2000` base; if your server uses custom rotary groups (base `3000`), port offsets may vary.
 
----
-*Maintained by [Your Name/Handle]*
 # Usage
 <pre>
 usage: mapit.py [-h] -u USERNAME [-p PASSWORD] -l LOOPBACK -t TERMSERV_IP_ADDRESS -c CSV_FILE_NAME
