@@ -31,7 +31,7 @@ def main():
                                           user_input.password)
 
     # Gather HostNames and Ports from Show Run
-    show_run_output = net_connect.send_command("show run | i hostname")
+    show_run_output = net_connect.send_command("show run | i host")
     
     host_details = parseOutput(show_run_output, "cisco_show_run_hostnames.textfsm")
 
