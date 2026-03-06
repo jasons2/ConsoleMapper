@@ -37,7 +37,7 @@ def main():
 
     #### Temporary Code
     from pprint import pprint
-    pprint(show_line_output)
+    pprint(show_run_output)
     pprint(host_details)
 
     net_connect.disconnect()
