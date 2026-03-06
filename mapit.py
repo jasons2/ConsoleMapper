@@ -35,21 +35,21 @@ def main():
     
     host_details = parseOutput(show_run_output, "cisco_show_run_hostnames.textfsm")
 
+    # Gather Show Line CLI
+    show_line_output = net_connect.send_command("show line")
+    # line_details = parseShowLineOutput(show_line_output)
+    line_details = parseOutput(show_line_output, "cisco_ios_show_line.textfsm")
+
     #### Temporary Code
     from pprint import pprint
-    pprint(show_run_output)
-    pprint(host_details)
+    pprint(show_line_output)
+    pprint(line_details)
 
     net_connect.disconnect()
 
     import sys
     sys.exit()
     #####################
-
-    # Gather Show Line CLI
-    show_line_output = net_connect.send_command("show line")
-    
-    line_details = parseShowLineOutput(show_line_output)
 
     for line_detail in line_details:
         if line_detail["TYPE"] in ["CTY", "VTY"] or line_detail["TTY"] in ['0', '1', '*']:
