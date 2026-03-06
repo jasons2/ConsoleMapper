@@ -29,24 +29,24 @@ def getConnectionToTermServ(device_name, username, password):
     return Netmiko(**ts)
 
 
-def parseShowLineOutput(show_line_output: str) -> list:
+# def parseShowLineOutput(show_line_output: str) -> list:
 
-    # CLEAN INPUT DATA
-    # 1. Standardize line endings and remove carriage returns (\r)
-    clean_output = show_line_output.replace('\r\n', '\n').replace('\r', '\n')
+#     # CLEAN INPUT DATA
+#     # 1. Standardize line endings and remove carriage returns (\r)
+#     clean_output = show_line_output.replace('\r\n', '\n').replace('\r', '\n')
 
-    # 2. Reconstruct the string: trim each line and remove empty ones
-    # This fixes "desync" issues caused by varying indentation (like 1/0 vs 0)
-    lines = [line.strip() for line in clean_output.splitlines() if line.strip()]
-    final_input = "\n".join(lines)
+#     # 2. Reconstruct the string: trim each line and remove empty ones
+#     # This fixes "desync" issues caused by varying indentation (like 1/0 vs 0)
+#     lines = [line.strip() for line in clean_output.splitlines() if line.strip()]
+#     final_input = "\n".join(lines)
 
-    template_file = "cisco_ios_show_line.textfsm"
-    with open(TEMPLATES_DIR.joinpath(template_file)) as fsm_template:
-        textfsm_parser = textfsm.TextFSM(fsm_template)
+#     template_file = "cisco_ios_show_line.textfsm"
+#     with open(TEMPLATES_DIR.joinpath(template_file)) as fsm_template:
+#         textfsm_parser = textfsm.TextFSM(fsm_template)
 
-    results = textfsm_parser.ParseText(final_input)
+#     results = textfsm_parser.ParseText(final_input)
 
-    return [dict(zip(textfsm_parser.header, row)) for row in results]
+#     return [dict(zip(textfsm_parser.header, row)) for row in results]
 
 def parseOutput(device_output: str, template_file) -> list:
     # CLEAN INPUT DATA
@@ -65,6 +65,17 @@ def parseOutput(device_output: str, template_file) -> list:
 
     return [dict(zip(textfsm_parser.header, row)) for row in results]
 
+def cleanLines(lines: list) -> list:
+
+    output = []
+
+    for line in lines:
+        if line["TYPE"] in ["CTY", "VTY"] or line["TTY"] in ['0', '1', '*']:
+            continue
+        else:
+            output.append(line)
+    
+    return output
 
 
 
@@ -116,6 +127,103 @@ def getHostname(network_connection: object, port: int, lookback_ip: str) -> str:
     else:
         print("Prompt not found")
     return hostname
+
+def evaluateDevice(_net_connect, device_details, tcp_port, loopback_ip):
+    
+    if _net_connect.find_prompt():
+        device_details['evaluated'] = True
+        redispatch(_net_connect, device_type="terminal_server")
+
+        _net_connect.write_channel(f"connect {loopback_ip} {tcp_port} \n ")
+        time.sleep(1)
+        o = _net_connect.read_channel()
+        print (f"===sent connect {loopback_ip} {tcp_port} ===\n")
+
+        # CHECK TO ENSURE CONNECTION ACCEPTED
+        if "refused by remote host" in o:
+            _connectedDevice.setConnected(False)
+            _connectedDevice.setAnswers(False)
+            _connectedDevice.setConfirmed(False)
+            _connectedDevice.audit += "=> set Connected, Answers, and Confirmed to False\n"
+
+            return None
+        
+        _connectedDevice.setConnected(True)
+        _connectedDevice.audit += "=> set Connected to True\n"
+
+        count = 0
+        continueToEvaluate = True
+
+        while continueToEvaluate and count <= 1:
+
+            # if 'user' in o:
+            if re.search('user', o, re.IGNORECASE):
+                count += 1
+                _net_connect.write_channel(_net_connect.username + '\n')
+                time.sleep(2)
+                o = _net_connect.read_channel()
+                _connectedDevice.audit += "===sent username===\n"
+                _connectedDevice.audit += "|" + o + "|\n"
+
+            # if 'pass' in o:
+            if re.search('pass', o, re.IGNORECASE):
+                _net_connect.write_channel(_net_connect.password + '\n')
+                time.sleep(1) # originally 2
+                _net_connect.write_channel('\r\n')
+                time.sleep(3)
+                o = _net_connect.read_channel()
+                _connectedDevice.audit += "===sent password <CR> after 10 secs===\n"
+                _connectedDevice.audit += "|" + o + "|\n"
+
+            if matchDevice(_connectedDevice.deviceName, o):
+                continueToEvaluate = False
+                _connectedDevice.setConfirmed(True)
+                _connectedDevice.audit += "=>setConfirmed set to True\n"
+            
+            if re.search(r'\w',o):
+                _connectedDevice.setAnswers(True)
+                _connectedDevice.audit += "=>setAnswers set to True Length %s\n" % len(o)
+            else:
+                _connectedDevice.setAnswers(False)
+                continueToEvaluate = False
+                _connectedDevice.audit += "=>setAnswers set to False\n"
+            
+            if not re.search("user", o, re.IGNORECASE):
+                continueToEvaluate = False
+                _connectedDevice.audit += "=>Exception"
+                _connectedDevice.audit += "|" + o + "|\n"
+
+        time.sleep(.5)
+        
+        # Send Exit in case logged into Device
+        _net_connect.write_channel("exit\n")
+        time.sleep(.5)
+
+        # Sending CTRL-SHIFT-6 x
+        _net_connect.write_channel(CNTL_SHIFT_6)
+        _net_connect.write_channel('x')
+        time.sleep(3.5)
+        o = _net_connect.read_channel()
+        _connectedDevice.audit += "===sent CTRL-SHFT-6 x===\n"
+        _connectedDevice.audit += "|" + o + "|\n"
+        
+        _net_connect.write_channel("disc" + "\n")
+        time.sleep(.5)
+        o = _net_connect.read_channel()
+        _connectedDevice.audit += "===sent 'disc <cr>'===\n"
+        _connectedDevice.audit += "|" + o + "|\n"
+        
+        if "confirm" in o:
+            _net_connect.write_channel("\n\n")
+        
+        time.sleep(.5)
+        o = _net_connect.read_channel()
+        _connectedDevice.audit += "===sent '<cr><cr>' if confirm seen===\n"
+        _connectedDevice.audit += "|" + o + "|\n"
+        
+    else:
+        _connectedDevice.audit += "\nPrompt Not Found\n"
+        logger.debug("Prompt not found")
 
 
 def getArgs():
