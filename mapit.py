@@ -32,11 +32,12 @@ def main():
 
     # Gather HostNames and Ports from Show Run
     show_run_output = net_connect.send_command("show run | i hostname")
-    pprint(show_line_output)
+    
     host_details = parseOutput(show_run_output, "cisco_show_run_hostnames.textfsm")
 
     #### Temporary Code
     from pprint import pprint
+    pprint(show_line_output)
     pprint(host_details)
 
     net_connect.disconnect()
