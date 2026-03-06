@@ -29,7 +29,7 @@ def getConnectionToTermServ(device_name, username, password):
     return Netmiko(**ts)
 
 
-def parseLineDetails(show_line_output: str) -> list:
+def parseShowLineOutput(show_line_output: str) -> list:
 
     # CLEAN INPUT DATA
     # 1. Standardize line endings and remove carriage returns (\r)
@@ -40,8 +40,6 @@ def parseLineDetails(show_line_output: str) -> list:
     lines = [line.strip() for line in clean_output.splitlines() if line.strip()]
     final_input = "\n".join(lines)
 
-
-
     template_file = "cisco_ios_show_line.textfsm"
     with open(TEMPLATES_DIR.joinpath(template_file)) as fsm_template:
         textfsm_parser = textfsm.TextFSM(fsm_template)
@@ -49,7 +47,26 @@ def parseLineDetails(show_line_output: str) -> list:
     results = textfsm_parser.ParseText(final_input)
 
     return [dict(zip(textfsm_parser.header, row)) for row in results]
-    
+
+def parseOutput(device_output: str, template_file) -> list:
+    # CLEAN INPUT DATA
+    # 1. Standardize line endings and remove carriage returns (\r)
+    clean_output = device_output.replace('\r\n', '\n').replace('\r', '\n')
+
+    # 2. Reconstruct the string: trim each line and remove empty ones
+    # This fixes "desync" issues caused by varying indentation (like 1/0 vs 0)
+    lines = [line.strip() for line in clean_output.splitlines() if line.strip()]
+    final_input = "\n".join(lines)
+
+    with open(TEMPLATES_DIR.joinpath(template_file)) as fsm_template:
+        textfsm_parser = textfsm.TextFSM(fsm_template)
+
+    results = textfsm_parser.ParseText(final_input)
+
+    return [dict(zip(textfsm_parser.header, row)) for row in results]
+
+
+
 
 def getHostname(network_connection: object, port: int, lookback_ip: str) -> str:
     hostname = ""

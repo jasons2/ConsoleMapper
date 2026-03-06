@@ -1,0 +1,5 @@
+Value HOSTNAME (\S+)
+Value PORT (\d+)
+
+Start
+  ^ip\shost\s${HOSTNAME}\s${PORT}\s.* -> Record
