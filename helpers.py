@@ -142,7 +142,7 @@ def evaluateDevice(
         net_connect.write_channel(f"connect {loopback_ip} {line.tcp_destination_port} \n ")
         time.sleep(1)
         o = net_connect.read_channel()
-        line.audit += f"===sent connect {loopback_ip} {line.tcp_destination_port} ===\n")
+        line.audit += f"===sent connect {loopback_ip} {line.tcp_destination_port} ===\n"
 
         # CHECK TO ENSURE CONNECTION ACCEPTED
         if "refused by remote host" in o:
