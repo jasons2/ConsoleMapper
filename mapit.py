@@ -85,8 +85,7 @@ def main():
     ########  TEMPORARY CODE ##############
     from pprint import pprint
     import sys
-    for port, result in results.items():
-        print(port, repr(result))
+
 
     a_line = Line(tcp_destination_port=2005)
     evaluateDevice(net_connect,
@@ -94,7 +93,8 @@ def main():
                    user_input.loopback)
 
     print(repr(a_line))
-    print(a_line.to_csv_row)
+    for l in a_line.to_csv_row:
+        print(l)
 
     net_connect.disconnect()
 
