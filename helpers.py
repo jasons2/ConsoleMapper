@@ -48,6 +48,7 @@ def getConnectionToTermServ(device_name, username, password):
 
 #     return [dict(zip(textfsm_parser.header, row)) for row in results]
 
+
 def parseOutput(device_output: str, template_file) -> list:
     # CLEAN INPUT DATA
     # 1. Standardize line endings and remove carriage returns (\r)
@@ -65,6 +66,7 @@ def parseOutput(device_output: str, template_file) -> list:
 
     return [dict(zip(textfsm_parser.header, row)) for row in results]
 
+
 def cleanLines(lines: list) -> list:
 
     output = []
@@ -78,152 +80,137 @@ def cleanLines(lines: list) -> list:
     return output
 
 
+# def getHostname(network_connection: object, port: int, lookback_ip: str) -> str:
+#     hostname = ""
+#     if network_connection.find_prompt():
+#         print(f"Attempting to connect to {port}")
+#         redispatch(network_connection, device_type="terminal_server")
 
-def getHostname(network_connection: object, port: int, lookback_ip: str) -> str:
-    hostname = ""
-    if network_connection.find_prompt():
-        print(f"Attempting to connect to {port}")
-        redispatch(network_connection, device_type="terminal_server")
+#         network_connection.write_channel(f"connect {lookback_ip} {port} \n")
+#         time.sleep(1)
 
-        network_connection.write_channel(f"connect {lookback_ip} {port} \n")
-        time.sleep(1)
+#         channel_output = network_connection.read_channel()
 
-        channel_output = network_connection.read_channel()
+#         if "refused by remote host" in channel_output:
+#             print(f"Port: {port} -> Connection refused")
+#             hostname = "Connection refused"
 
-        if "refused by remote host" in channel_output:
-            print(f"Port: {port} -> Connection refused")
-            hostname = "Connection refused"
-
-        elif "Open" in channel_output:
-            print("Connected...Attempting to retrieve hostname")
-            network_connection.write_channel("\n")
-            time.sleep(1)
-            channel_output = network_connection.read_channel()
+#         elif "Open" in channel_output:
+#             print("Connected...Attempting to retrieve hostname")
+#             network_connection.write_channel("\n")
+#             time.sleep(1)
+#             channel_output = network_connection.read_channel()
             
-            match = re.search(r'^(\S+)(?=\s+login:)', channel_output, re.MULTILINE)
+#             match = re.search(r'^(\S+)(?=\s+login:)', channel_output, re.MULTILINE)
 
-            if match:
-                hostname = match.group(1)
-            else:
-                print(f"Hostname not found for port {port}")
-                hostname = f"Hostname Not Found"
+#             if match:
+#                 hostname = match.group(1)
+#             else:
+#                 print(f"Hostname not found for port {port}")
+#                 hostname = f"Hostname Not Found"
         
-        # Disconnect from device.
-        # Sending CTRL-SHIFT-6 x
-        print(f"Closing port {port}")
-        network_connection.write_channel(CNTL_SHIFT_6)
-        network_connection.write_channel('x')
-        time.sleep(3.5)
-        channel_output = network_connection.read_channel()
+#         # Disconnect from device.
+#         # Sending CTRL-SHIFT-6 x
+#         print(f"Closing port {port}")
+#         network_connection.write_channel(CNTL_SHIFT_6)
+#         network_connection.write_channel('x')
+#         time.sleep(3.5)
+#         channel_output = network_connection.read_channel()
         
-        network_connection.write_channel("disc" + "\n")
-        time.sleep(.5)
-        channel_output = network_connection.read_channel()
-        network_connection.write_channel("\n")
-        time.sleep(.5)
-        channel_output = network_connection.read_channel()
-        print(f"Closed port {port} successfully")
+#         network_connection.write_channel("disc" + "\n")
+#         time.sleep(.5)
+#         channel_output = network_connection.read_channel()
+#         network_connection.write_channel("\n")
+#         time.sleep(.5)
+#         channel_output = network_connection.read_channel()
+#         print(f"Closed port {port} successfully")
 
-    else:
-        print("Prompt not found")
-    return hostname
+#     else:
+#         print("Prompt not found")
+#     return hostname
 
-def evaluateDevice(_net_connect, device_details, tcp_port, loopback_ip):
+def evaluateDevice(
+        net_connect: object,
+        line: object,
+        loopback_ip: str) -> object:
     
-    if _net_connect.find_prompt():
-        device_details['evaluated'] = True
-        redispatch(_net_connect, device_type="terminal_server")
+    if net_connect.find_prompt():
+        line.evaluated = True
+        redispatch(net_connect, device_type="terminal_server")
 
-        _net_connect.write_channel(f"connect {loopback_ip} {tcp_port} \n ")
+        # Attempt to Reverse Telnet to tcp_destination_port
+        net_connect.write_channel(f"connect {loopback_ip} {line.tcp_destination_port} \n ")
         time.sleep(1)
-        o = _net_connect.read_channel()
-        print (f"===sent connect {loopback_ip} {tcp_port} ===\n")
+        o = net_connect.read_channel()
+        line.audit += f"===sent connect {loopback_ip} {line.tcp_destination_port} ===\n")
 
         # CHECK TO ENSURE CONNECTION ACCEPTED
         if "refused by remote host" in o:
-            _connectedDevice.setConnected(False)
-            _connectedDevice.setAnswers(False)
-            _connectedDevice.setConfirmed(False)
-            _connectedDevice.audit += "=> set Connected, Answers, and Confirmed to False\n"
+            line.connected = False
+            line.audit += "=> set Connected, Answers, and Confirmed to False\n"
+        else:        
+            line.connected = True
+            line.audit += "=> set Connected to True\n"
 
-            return None
-        
-        _connectedDevice.setConnected(True)
-        _connectedDevice.audit += "=> set Connected to True\n"
-
-        count = 0
-        continueToEvaluate = True
-
-        while continueToEvaluate and count <= 1:
-
+        if line.connected:
             # if 'user' in o:
             if re.search('user', o, re.IGNORECASE):
-                count += 1
-                _net_connect.write_channel(_net_connect.username + '\n')
+                net_connect.write_channel(net_connect.username + '\n')
                 time.sleep(2)
-                o = _net_connect.read_channel()
-                _connectedDevice.audit += "===sent username===\n"
-                _connectedDevice.audit += "|" + o + "|\n"
+                o = net_connect.read_channel()
+                line.audit += "===sent username===\n"
+                line.audit += "|" + o + "|\n"
 
             # if 'pass' in o:
             if re.search('pass', o, re.IGNORECASE):
-                _net_connect.write_channel(_net_connect.password + '\n')
+                net_connect.write_channel(net_connect.password + '\n')
                 time.sleep(1) # originally 2
-                _net_connect.write_channel('\r\n')
+                net_connect.write_channel('\r\n')
                 time.sleep(3)
-                o = _net_connect.read_channel()
-                _connectedDevice.audit += "===sent password <CR> after 10 secs===\n"
-                _connectedDevice.audit += "|" + o + "|\n"
+                o = net_connect.read_channel()
+                line.audit += "===sent password <CR> after 1 sec===\n"
+                line.audit += "|" + o + "|\n"
 
-            if matchDevice(_connectedDevice.deviceName, o):
-                continueToEvaluate = False
-                _connectedDevice.setConfirmed(True)
-                _connectedDevice.audit += "=>setConfirmed set to True\n"
+            if re.search('login', o, re.IGNORECASE):
+                match = re.search(r'^(\S+)(?=\s+login:)', o, re.MULTILINE)
+
+                if match:
+                    hostname = match.group(1)
+                else:
+                    print(f"Hostname not found for port {line.tcp_destination_port}")
+                    hostname = f"Hostname Not Found"
+                
+                line.host_name_connected = hostname
             
-            if re.search(r'\w',o):
-                _connectedDevice.setAnswers(True)
-                _connectedDevice.audit += "=>setAnswers set to True Length %s\n" % len(o)
-            else:
-                _connectedDevice.setAnswers(False)
-                continueToEvaluate = False
-                _connectedDevice.audit += "=>setAnswers set to False\n"
+                line.audit += "===HostName Found and set === \n"
+                
+            time.sleep(.5)
             
-            if not re.search("user", o, re.IGNORECASE):
-                continueToEvaluate = False
-                _connectedDevice.audit += "=>Exception"
-                _connectedDevice.audit += "|" + o + "|\n"
-
-        time.sleep(.5)
-        
-        # Send Exit in case logged into Device
-        _net_connect.write_channel("exit\n")
-        time.sleep(.5)
-
-        # Sending CTRL-SHIFT-6 x
-        _net_connect.write_channel(CNTL_SHIFT_6)
-        _net_connect.write_channel('x')
-        time.sleep(3.5)
-        o = _net_connect.read_channel()
-        _connectedDevice.audit += "===sent CTRL-SHFT-6 x===\n"
-        _connectedDevice.audit += "|" + o + "|\n"
-        
-        _net_connect.write_channel("disc" + "\n")
-        time.sleep(.5)
-        o = _net_connect.read_channel()
-        _connectedDevice.audit += "===sent 'disc <cr>'===\n"
-        _connectedDevice.audit += "|" + o + "|\n"
-        
-        if "confirm" in o:
-            _net_connect.write_channel("\n\n")
-        
-        time.sleep(.5)
-        o = _net_connect.read_channel()
-        _connectedDevice.audit += "===sent '<cr><cr>' if confirm seen===\n"
-        _connectedDevice.audit += "|" + o + "|\n"
+            # Sending CTRL-SHIFT-6 x
+            net_connect.write_channel(CNTL_SHIFT_6)
+            net_connect.write_channel('x')
+            time.sleep(3.5)
+            o = net_connect.read_channel()
+            line.audit += "===sent CTRL-SHFT-6 x===\n"
+            line.audit += "|" + o + "|\n"
+            
+            # Make sure to clear the line
+            net_connect.write_channel("disc" + "\n")
+            time.sleep(.5)
+            o = net_connect.read_channel()
+            line.audit += "===sent 'disc <cr>'===\n"
+            line.audit += "|" + o + "|\n"
+            
+            if "confirm" in o:
+                net_connect.write_channel("\n\n")
+            
+            time.sleep(.5)
+            o = net_connect.read_channel()
+            line.audit += "===sent '<cr><cr>' if confirm seen===\n"
+            line.audit += "|" + o + "|\n"
         
     else:
-        _connectedDevice.audit += "\nPrompt Not Found\n"
-        logger.debug("Prompt not found")
+        line.audit += "\nPrompt Not Found\n"
 
 
 def getArgs():

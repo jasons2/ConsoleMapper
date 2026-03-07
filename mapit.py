@@ -12,7 +12,7 @@ import getpass
 
 from helpers import getConnectionToTermServ
 from helpers import parseOutput, cleanLines
-from helpers import getHostname, getArgs
+from helpers import evaluateDevice, getArgs
 from constants import APP_DIR
 from LINE import Line
 
@@ -88,6 +88,13 @@ def main():
     for port, result in results.items():
         print(port, repr(result))
 
+    a_line = Line(tcp_destination_port=2005)
+    evaluateDevice(net_connect,
+                   a_line,
+                   user_input.loopback)
+
+    print(repr(a_line))
+    print(a_line.audit)
 
     net_connect.disconnect()
 
