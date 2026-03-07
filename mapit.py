@@ -24,7 +24,7 @@ def main():
         user_input.password = getpass.getpass(prompt=f"Password for {user_input.username}: ")
 
     # Define Constants 
-    output_rows = ["Host (Conn)", "Host (Cfg)", "Evaluated", "Connected", "Answers", "Show Run", "TTY", "Line", "Noisy", "Noise Lvl", "Audit"]
+    output_rows = ["Evaluated", "Connected", "In Show Run", "Host (Conn)", "Host (Cfg)", "TTY", "Line", "Noisy", "Noise Lvl", "Audit"]
 
     # Establish Connection to Console Router
     net_connect = getConnectionToTermServ(user_input.termserv_ip_address,
@@ -81,46 +81,17 @@ def main():
         else:
             print(f"Port {host_port} is defined in Configuration, but Line is not Present.")
 
-
-    ########  TEMPORARY CODE ##############
-    from pprint import pprint
-    import sys
-
-
-    a_line = Line(tcp_destination_port=2005)
-    evaluateDevice(net_connect,
-                   a_line,
-                   user_input.loopback)
-
-    print(repr(a_line))
-    for l in a_line.to_csv_row():
-        print(l)
-
-    net_connect.disconnect()
-
-    sys.exit()
-    #######
-
-
-    for line_detail in line_details:
-        if line_detail["TYPE"] in ["CTY", "VTY"] or line_detail["TTY"] in ['0', '1', '*']:
-            continue
-        else:
-            port = int(line_detail["LINE"]) + 2000
-            host_name = getHostname(net_connect, 
-                                    port, 
-                                    user_input.loopback)
-            output_rows.append([line_detail["TTY"],
-                                str(port),
-                                host_name])
+    for line in interesting_lines.values:
+        evaluateDevice(net_connect,
+                       line,
+                       user_input.loopback)
+        output_rows.apped(line.to_csv_row())
 
     with open(user_input.csv_file_name, "w") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerows(output_rows)
 
     net_connect.disconnect()
-
-
 
 if __name__ == "__main__":
     main()
