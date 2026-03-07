@@ -94,7 +94,7 @@ def main():
                    user_input.loopback)
 
     print(repr(a_line))
-    print(a_line.audit)
+    print(a_line.to_csv_row)
 
     net_connect.disconnect()
 

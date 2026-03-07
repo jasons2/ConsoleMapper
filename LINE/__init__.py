@@ -35,7 +35,6 @@ class Line:
             f"line={self.line!r}, "
             f"noisy_line={self.noisy_line!r}, "
             f"noise_level={self.noise_level!r}, "
-            f"audit={self.audit!r}"
             f")"
         )
 
