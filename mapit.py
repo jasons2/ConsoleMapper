@@ -93,7 +93,7 @@ def main():
                    user_input.loopback)
 
     print(repr(a_line))
-    for l in a_line.to_csv_row:
+    for l in a_line.to_csv_row():
         print(l)
 
     net_connect.disconnect()
