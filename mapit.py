@@ -81,15 +81,17 @@ def main():
         else:
             print(f"Port {host_port} is defined in Configuration, but Line is not Present.")
 
-    for line in interesting_lines.values:
+    for tcp_port, line in results.items():
         evaluateDevice(net_connect,
                        line,
                        user_input.loopback)
-        output_rows.apped(line.to_csv_row())
+        print(f"Completed evaluation of {tcp_port}")
 
     with open(user_input.csv_file_name, "w") as csv_file:
         writer = csv.writer(csv_file)
-        writer.writerows(output_rows)
+        
+        for line in results.values():
+            writer.writerow(line.to_csv_row())
 
     net_connect.disconnect()
 
